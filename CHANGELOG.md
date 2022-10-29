@@ -1,6 +1,6 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
-# github-actions-intellij-plugin Changelog
+# github-actions Changelog
 
 ## [Unreleased]
 ### Added
