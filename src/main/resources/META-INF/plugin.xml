@@ -1,16 +1,24 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.aarcangeli.github-actions</id>
-    <name>Github Actions</name>
-    <vendor email="alessandroarcangeli.rm@gmail.com" url="https://github.com/aarcangeli">Alessandro Arcangeli</vendor>
+  <id>com.github.aarcangeli.github-actions</id>
+  <name>Github Actions</name>
+  <vendor email="alessandroarcangeli.rm@gmail.com" url="https://github.com/aarcangeli">Alessandro Arcangeli</vendor>
 
-    <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.platform</depends>
+  <depends>org.jetbrains.plugins.yaml</depends>
 
-    <extensions defaultExtensionNs="com.intellij">
-      <fileIconProvider implementation="com.github.aarcangeli.githubactions.providers.GHAIconProvider"/>
-    </extensions>
+  <resource-bundle>messages.GHABundle</resource-bundle>
 
-    <extensions defaultExtensionNs="JavaScript.JsonSchema">
-        <ProviderFactory implementation="com.github.aarcangeli.githubactions.providers.GHASchemaProviderFactory"/>
-    </extensions>
+  <extensions defaultExtensionNs="com.intellij">
+    <fileIconProvider implementation="com.github.aarcangeli.githubactions.providers.GHAIconProvider"/>
+
+    <localInspection language="yaml" shortName="GitHubActionsDeprecatedCommandsInspection"
+                     key="deprecated.commands.display.name"
+                     groupKey="github.actions.issues" enabledByDefault="true" level="WARNING"
+                     implementationClass="com.github.aarcangeli.githubactions.providers.inspections.DeprecatedCommandsInspection"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="JavaScript.JsonSchema">
+    <ProviderFactory implementation="com.github.aarcangeli.githubactions.providers.GHASchemaProviderFactory"/>
+  </extensions>
 </idea-plugin>

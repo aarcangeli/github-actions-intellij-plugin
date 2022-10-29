@@ -1,6 +1,6 @@
 package com.github.aarcangeli.githubactions.providers
 
-import com.github.aarcangeli.githubactions.MyBundle
+import com.github.aarcangeli.githubactions.GHABundle
 import com.github.aarcangeli.githubactions.utils.GHAUtils
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -25,7 +25,7 @@ class GHASchemaProviderFactory : JsonSchemaProviderFactory {
     }
 
     override fun getName(): @Nls String {
-      return MyBundle.message("plugin.name")
+      return GHABundle.message("plugin.name")
     }
 
     override fun getSchemaFile(): VirtualFile? {
