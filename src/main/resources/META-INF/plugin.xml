@@ -7,7 +7,5 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.github.aarcangeli.githubactions.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.aarcangeli.githubactions.services.MyProjectService"/>
     </extensions>
 </idea-plugin>
