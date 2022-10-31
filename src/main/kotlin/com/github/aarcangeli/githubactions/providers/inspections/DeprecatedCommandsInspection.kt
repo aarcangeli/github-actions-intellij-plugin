@@ -120,10 +120,10 @@ class DeprecatedCommandsInspection : LocalInspectionTool() {
     val echo = readEcho(command, shellType) ?: return null
     val actionCommand = ActionCommand.tryParse(echo) ?: return null
     if (actionCommand.command in listOf("save-state", "set-output")) {
-      return SetDeprecatedCommand(actionCommand, REF_URL_OUTPUT, command)
+      return SetDeprecatedCommand(actionCommand, REF_URL_OUTPUT, shellType)
     }
     if (actionCommand.command in listOf("set-env", "add-path")) {
-      return SetDeprecatedCommand(actionCommand, REF_URL_ENV, command)
+      return SetDeprecatedCommand(actionCommand, REF_URL_ENV, shellType)
     }
     return null
   }
@@ -140,7 +140,7 @@ class DeprecatedCommandsInspection : LocalInspectionTool() {
         return text
       }
 
-      // TODO: we currently ignore escape characters for now or shell specific features.
+      // TODO: for now we ignore escape characters and shell specific features.
       if (text.startsWith('"') && text.endsWith('"')) {
         return text.substring(1, text.length - 1)
       }
@@ -149,29 +149,78 @@ class DeprecatedCommandsInspection : LocalInspectionTool() {
       }
     }
 
+    if (shellType == ShellType.PowerShell || shellType == ShellType.PowerShellCore) {
+      if (command.startsWith("Write-Output ")) {
+        val text = command.substring(13).trim()
+        if (text.startsWith('"') && text.endsWith('"')) {
+          return text.substring(1, text.length - 1)
+        }
+        if (text.startsWith("'") && text.endsWith("'")) {
+          return text.substring(1, text.length - 1)
+        }
+      }
+    }
+
     return null
   }
 
 }
 
-class ReplaceDeprecatedCommandQuickFix(val rangePointer: SmartPsiFileRange, val commandAction: SetDeprecatedCommand) : LocalQuickFix {
+class ReplaceDeprecatedCommandQuickFix(private val rangePointer: SmartPsiFileRange, private val commandAction: SetDeprecatedCommand) :
+  LocalQuickFix {
+
+  override fun getName(): String {
+    val newFile = when (commandAction.command.command) {
+      "save-state" -> "\$GITHUB_STATE"
+      "set-output" -> "\$GITHUB_OUTPUT"
+      "set-env" -> "\$GITHUB_ENV"
+      "add-path" -> "\$GITHUB_PATH"
+      else -> return familyName
+    }
+    return GHABundle.message("github.actions.deprecated.command.quickfix", newFile)
+  }
 
   override fun getFamilyName(): String {
-    return "Replace with new command"
+    return "Replace command"
   }
 
   override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
     val run = descriptor.psiElement as YAMLScalar
     val range = rangePointer.range ?: return
     val newText = when (commandAction.command.command) {
-      "save-state" -> "echo \"${commandAction.command.getProperty("name")}=${commandAction.command.data ?: ""}\" >> \$GITHUB_STATE"
-      "set-output" -> "echo \"${commandAction.command.getProperty("name")}=${commandAction.command.data ?: ""}\" >> \$GITHUB_OUTPUT"
-      "set-env" -> "echo \"${commandAction.command.getProperty("name")}=${commandAction.command.data ?: ""}\" >> \$GITHUB_ENV"
-      "add-path" -> "echo \"${commandAction.command.data ?: ""}\" >> \$GITHUB_PATH"
+      "save-state" -> composeEcho(
+        "${commandAction.command.getProperty("name")}=${commandAction.command.data ?: ""}",
+        "GITHUB_STATE",
+        commandAction.shellType
+      )
+
+      "set-output" -> composeEcho(
+        "${commandAction.command.getProperty("name")}=${commandAction.command.data ?: ""}",
+        "GITHUB_OUTPUT",
+        commandAction.shellType
+      )
+
+      "set-env" -> composeEcho(
+        "${commandAction.command.getProperty("name")}=${commandAction.command.data ?: ""}",
+        "GITHUB_ENV",
+        commandAction.shellType
+      )
+
+      "add-path" -> composeEcho(commandAction.command.data ?: "", "GITHUB_PATH", commandAction.shellType)
       else -> return
     }
     ElementManipulators.handleContentChange(run, TextRange.create(range).shiftLeft(run.textRange.startOffset), newText)
   }
+
+  private fun composeEcho(content: String, destination: String, shellType: ShellType): String {
+    if (shellType == ShellType.Cmd) {
+      return "echo $content>>%$destination%"
+    }
+    if (shellType == ShellType.PowerShell || shellType == ShellType.PowerShellCore) {
+      return "\"$content\" >> \$env:$destination"
+    }
+    return "echo \"$content\" >> \$$destination"
+  }
 }
 
-class SetDeprecatedCommand(val command: ActionCommand, val url: String, val originalLine: String)
+class SetDeprecatedCommand(val command: ActionCommand, val url: String, val shellType: ShellType)

@@ -1,0 +1,11 @@
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - shell: cmd
+        run: |
+          echo ${{ github.workspace }}\output>>%GITHUB_PATH%

@@ -16,10 +16,26 @@ class ReplaceDeprecatedCommandQuickFixTest : BasePlatformTestCase() {
 
   @Test
   fun testAddPath1() {
-    myFixture.configureByFile(".github/workflows/addPath1.yml")
+    doTest()
+  }
+
+  @Test
+  fun testAddPath2() {
+    doTest()
+  }
+
+  @Test
+  fun testAddPath3() {
+    doTest()
+  }
+
+  @Test
+  fun doTest() {
+    val testName = getTestName(true)
+    myFixture.configureByFile(".github/workflows/$testName.yml")
     val fixes = myFixture.getAllQuickFixes()
     assertEquals(1, fixes.size)
     myFixture.launchAction(fixes[0])
-    myFixture.checkResultByFile(".github/workflows/addPath1_after.yml")
+    myFixture.checkResultByFile(".github/workflows/${testName}_after.yml")
   }
 }

@@ -1,0 +1,11 @@
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - shell: powershell
+        run: |
+          echo "::add-path::${{ github.workspace }}\output"
