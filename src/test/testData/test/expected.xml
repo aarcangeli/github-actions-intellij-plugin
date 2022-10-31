@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<problems>
+  <problem>
+    <file>temp:///src/add-path1.yml</file>
+    <line>11</line>
+    <module>light_idea_test_case</module>
+    <entry_point TYPE="file" FQNAME="temp:///src/add-path1.yml" />
+    <problem_class id="DeprecatedCommands" severity="WARNING" attribute_key="WARNING_ATTRIBUTES" />
+    <description>&lt;html&gt;Command 'add-path' is deprecated and will be removed in the future.&lt;br&gt;See &lt;a href=&quot;https://github.blog/changelog/2020-10-01-github-actions-deprecating-set-env-and-add-path-commands/&quot;&gt;GitHub documentation&lt;/a&gt; for more details&lt;/html&gt;.</description>
+    <highlighted_element>echo \&quot;::add-path::$HOME/.local/bin\&quot;</highlighted_element>
+    <language>yaml</language>
+    <offset>16</offset>
+    <length>37</length>
+  </problem>
+</problems>

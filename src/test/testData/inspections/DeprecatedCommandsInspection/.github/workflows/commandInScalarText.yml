@@ -1,0 +1,14 @@
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - run:
+          line 1
+          
+          <warning descr="Command 'set-output' is deprecated and will be removed in the future.See GitHub documentation for more details.">echo "::set-output name=version::$VERSION</warning>"
+          
+          line 3

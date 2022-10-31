@@ -1,0 +1,11 @@
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - run: |
+          <warning descr="Command 'add-path' is deprecated and will be removed in the future.See GitHub documentation for more details.">echo "::add-path::$HOME/.local/bin"</warning>
+          <warning descr="Command 'add-path' is deprecated and will be removed in the future.See GitHub documentation for more details.">echo '::add-path::"my_path"'</warning>

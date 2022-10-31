@@ -1,0 +1,11 @@
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - run: |
+          <warning descr="Command 'set-env' is deprecated and will be removed in the future.See GitHub documentation for more details.">echo "::set-env name=pluginVerifierHomeDir::~/.pluginVerifier"</warning>
+          <warning descr="Command 'set-env' is deprecated and will be removed in the future.See GitHub documentation for more details.">echo "::set-env name=JAVA_HOME::$HOME/java/openjdk"</warning>

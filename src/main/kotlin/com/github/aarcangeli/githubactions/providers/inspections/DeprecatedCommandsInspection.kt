@@ -5,14 +5,20 @@ import com.github.aarcangeli.githubactions.commands.ActionCommand
 import com.github.aarcangeli.githubactions.domain.ShellType
 import com.github.aarcangeli.githubactions.domain.StepElement
 import com.github.aarcangeli.githubactions.domain.WorkflowElement
-import com.intellij.codeInspection.InspectionManager
-import com.intellij.codeInspection.LocalInspectionTool
-import com.intellij.codeInspection.ProblemDescriptor
-import com.intellij.codeInspection.ProblemHighlightType
+import com.github.aarcangeli.githubactions.utils.GHAUtils
+import com.intellij.codeInspection.*
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.ElementManipulators
 import com.intellij.psi.PsiFile
+import com.intellij.psi.SmartPointerManager
+import com.intellij.psi.SmartPsiFileRange
+import com.intellij.util.text.CharArrayUtil
 import org.jetbrains.yaml.psi.YAMLFile
+import org.jetbrains.yaml.psi.YAMLQuotedText
+import org.jetbrains.yaml.psi.YAMLScalar
+import org.jetbrains.yaml.psi.YAMLScalarList
 
 private const val REF_URL_OUTPUT = "https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/"
 private const val REF_URL_ENV = "https://github.blog/changelog/2020-10-01-github-actions-deprecating-set-env-and-add-path-commands/"
@@ -26,6 +32,7 @@ private const val REF_URL_ENV = "https://github.blog/changelog/2020-10-01-github
 class DeprecatedCommandsInspection : LocalInspectionTool() {
   override fun checkFile(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor>? {
     if (file !is YAMLFile) return null
+    if (!GHAUtils.isWorkflowPath(file.virtualFile ?: return null)) return null
     return checkWorkflow(manager, WorkflowElement(file)).toTypedArray()
   }
 
@@ -58,7 +65,8 @@ class DeprecatedCommandsInspection : LocalInspectionTool() {
     val result = mutableListOf<ProblemDescriptor>()
 
     var offset = 0
-    for (line in run.textValue.split("\n")) {
+    val textValue = run.textValue
+    for (line in textValue.split("\n")) {
       ProgressManager.checkCanceled()
       val lineOffset = offset
       offset += line.length + 1
@@ -78,12 +86,28 @@ class DeprecatedCommandsInspection : LocalInspectionTool() {
         continue
       }
 
+      val range =
+        TextRange(CharArrayUtil.shiftForward(run.text, start, " \t\n"), CharArrayUtil.shiftBackward(run.text, end - 1, " \t\n") + 1)
+      val rangePointer =
+        SmartPointerManager.getInstance(run.project)
+          .createSmartPsiFileRangePointer(run.containingFile, range.shiftRight(run.textRange.startOffset))
+
+      // some scalar implementation are bugged and return the wrong offset, don't create a quick fix in this case
+      var createQuickFix = false
+      if (run is YAMLScalarList || run is YAMLQuotedText) {
+        createQuickFix = true
+      }
+      else if (!textValue.contains("\n")) {
+        createQuickFix = true
+      }
+      val replaceQuickFix = if (createQuickFix) ReplaceDeprecatedCommandQuickFix(rangePointer, commandAction) else null
+
       val problemDescriptor: ProblemDescriptor = manager.createProblemDescriptor(
         run,
-        TextRange(start, end),
+        range,
         GHABundle.message("github.actions.deprecated.command.used", commandAction.command.command, commandAction.url),
         ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-        false
+        false, replaceQuickFix
       )
 
       result.add(problemDescriptor)
@@ -96,10 +120,10 @@ class DeprecatedCommandsInspection : LocalInspectionTool() {
     val echo = readEcho(command, shellType) ?: return null
     val actionCommand = ActionCommand.tryParse(echo) ?: return null
     if (actionCommand.command in listOf("save-state", "set-output")) {
-      return SetDeprecatedCommand(actionCommand, REF_URL_OUTPUT)
+      return SetDeprecatedCommand(actionCommand, REF_URL_OUTPUT, command)
     }
     if (actionCommand.command in listOf("set-env", "add-path")) {
-      return SetDeprecatedCommand(actionCommand, REF_URL_ENV)
+      return SetDeprecatedCommand(actionCommand, REF_URL_ENV, command)
     }
     return null
   }
@@ -128,6 +152,26 @@ class DeprecatedCommandsInspection : LocalInspectionTool() {
     return null
   }
 
-  class SetDeprecatedCommand(val command: ActionCommand, val url: String)
-
 }
+
+class ReplaceDeprecatedCommandQuickFix(val rangePointer: SmartPsiFileRange, val commandAction: SetDeprecatedCommand) : LocalQuickFix {
+
+  override fun getFamilyName(): String {
+    return "Replace with new command"
+  }
+
+  override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
+    val run = descriptor.psiElement as YAMLScalar
+    val range = rangePointer.range ?: return
+    val newText = when (commandAction.command.command) {
+      "save-state" -> "echo \"${commandAction.command.getProperty("name")}=${commandAction.command.data ?: ""}\" >> \$GITHUB_STATE"
+      "set-output" -> "echo \"${commandAction.command.getProperty("name")}=${commandAction.command.data ?: ""}\" >> \$GITHUB_OUTPUT"
+      "set-env" -> "echo \"${commandAction.command.getProperty("name")}=${commandAction.command.data ?: ""}\" >> \$GITHUB_ENV"
+      "add-path" -> "echo \"${commandAction.command.data ?: ""}\" >> \$GITHUB_PATH"
+      else -> return
+    }
+    ElementManipulators.handleContentChange(run, TextRange.create(range).shiftLeft(run.textRange.startOffset), newText)
+  }
+}
+
+class SetDeprecatedCommand(val command: ActionCommand, val url: String, val originalLine: String)

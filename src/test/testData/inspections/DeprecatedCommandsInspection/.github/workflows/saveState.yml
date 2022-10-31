@@ -1,0 +1,10 @@
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - run: |
+          <warning descr="Command 'save-state' is deprecated and will be removed in the future.See GitHub documentation for more details.">echo "::save-state name={name}::{value}"</warning>
