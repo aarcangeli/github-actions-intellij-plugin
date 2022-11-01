@@ -1,8 +1,27 @@
 package com.github.aarcangeli.githubactions.domain
 
+import com.github.aarcangeli.githubactions.utils.GHAUtils
+import com.intellij.patterns.PatternCondition
+import com.intellij.patterns.PlatformPatterns
+import com.intellij.patterns.PsiElementPattern
+import com.intellij.util.ProcessingContext
+import org.jetbrains.yaml.psi.YAMLDocument
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLMapping
 import java.util.*
+
+private val IS_WORKFLOW_PATTERN = PlatformPatterns.psiElement(YAMLMapping::class.java)
+  .withParent(
+    PlatformPatterns.psiElement(YAMLDocument::class.java)
+      .withParent(
+        PlatformPatterns.psiElement(YAMLFile::class.java)
+          .with(object : PatternCondition<YAMLFile>("Is Workflow File") {
+            override fun accepts(t: YAMLFile, context: ProcessingContext?): Boolean {
+              return GHAUtils.isWorkflowPath(t.virtualFile ?: return false)
+            }
+          })
+      )
+  )
 
 /**
  * Wrapper class for a workflow file (YAMLFile).
@@ -33,5 +52,15 @@ class WorkflowElement(private val file: YAMLFile) {
 
   override fun hashCode(): Int {
     return file.hashCode()
+  }
+
+  companion object {
+    fun getWorkflowPattern(): PsiElementPattern.Capture<YAMLMapping> {
+      return IS_WORKFLOW_PATTERN
+    }
+
+    fun isWorkflowFile(file: YAMLMapping): Boolean {
+      return IS_WORKFLOW_PATTERN.accepts(file)
+    }
   }
 }

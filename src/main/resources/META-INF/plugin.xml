@@ -10,7 +10,11 @@
   <resource-bundle>messages.GHABundle</resource-bundle>
 
   <extensions defaultExtensionNs="com.intellij">
+    <highlightVisitor implementation="com.github.aarcangeli.githubactions.highlighting.GHAHighlightVisitor"/>
+
     <fileIconProvider implementation="com.github.aarcangeli.githubactions.providers.GHAIconProvider"/>
+
+    <psi.referenceContributor implementation="com.github.aarcangeli.githubactions.providers.GHAReferenceContributor"/>
 
     <localInspection language="yaml" shortName="GitHubActionsDeprecatedCommandsInspection"
                      key="deprecated.commands.display.name"

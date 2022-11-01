@@ -1,8 +1,27 @@
 package com.github.aarcangeli.githubactions.domain
 
+import com.github.aarcangeli.githubactions.utils.KeyTextCondition
+import com.intellij.patterns.PlatformPatterns
+import com.intellij.patterns.PsiElementPattern
+import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLScalar
 import org.jetbrains.yaml.psi.YAMLSequence
+
+private val IS_JOB_PATTERN = PlatformPatterns.psiElement(YAMLMapping::class.java)
+  .withParent(
+    PlatformPatterns.psiElement(YAMLKeyValue::class.java)
+      .withParent(
+        PlatformPatterns.psiElement(YAMLMapping::class.java)
+          .withParent(
+            PlatformPatterns.psiElement(YAMLKeyValue::class.java)
+              .with(KeyTextCondition("jobs"))
+              .withParent(
+                WorkflowElement.getWorkflowPattern()
+              )
+          )
+      )
+  )
 
 class JobElement(private val job: YAMLMapping) {
 
@@ -49,5 +68,19 @@ class JobElement(private val job: YAMLMapping) {
 
   override fun hashCode(): Int {
     return job.hashCode()
+  }
+
+  companion object {
+    fun fromYaml(step: YAMLMapping): JobElement? {
+      return if (isJob(step)) JobElement(step) else null
+    }
+
+    fun getJobPattern(): PsiElementPattern.Capture<YAMLMapping> {
+      return IS_JOB_PATTERN
+    }
+
+    fun isJob(job: YAMLMapping): Boolean {
+      return IS_JOB_PATTERN.accepts(job)
+    }
   }
 }

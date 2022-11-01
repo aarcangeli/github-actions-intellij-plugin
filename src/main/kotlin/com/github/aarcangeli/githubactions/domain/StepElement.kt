@@ -1,8 +1,24 @@
 package com.github.aarcangeli.githubactions.domain
 
+import com.github.aarcangeli.githubactions.utils.KeyTextCondition
+import com.intellij.patterns.PlatformPatterns
 import com.intellij.psi.PsiElement
-import org.jetbrains.yaml.psi.YAMLMapping
-import org.jetbrains.yaml.psi.YAMLScalar
+import org.jetbrains.yaml.psi.*
+
+private val IS_STEP_PATTERN = PlatformPatterns.psiElement(YAMLMapping::class.java)
+  .withParent(
+    PlatformPatterns.psiElement(YAMLSequenceItem::class.java)
+      .withParent(
+        PlatformPatterns.psiElement(YAMLSequence::class.java)
+          .withParent(
+            PlatformPatterns.psiElement(YAMLKeyValue::class.java)
+              .with(KeyTextCondition("steps"))
+              .withParent(
+                JobElement.getJobPattern()
+              )
+          )
+      )
+  )
 
 class StepElement(private val step: YAMLMapping) {
   fun getRunAsText(): String? {
@@ -11,6 +27,10 @@ class StepElement(private val step: YAMLMapping) {
 
   fun getRun(): YAMLScalar? {
     return step.getKeyValueByKey("run")?.value as? YAMLScalar
+  }
+
+  fun getUses(): YAMLScalar? {
+    return step.getKeyValueByKey("uses")?.value as? YAMLScalar
   }
 
   /**
@@ -64,5 +84,15 @@ class StepElement(private val step: YAMLMapping) {
 
   override fun hashCode(): Int {
     return step.hashCode()
+  }
+
+  companion object {
+    fun fromYaml(step: YAMLMapping): StepElement? {
+      return if (isStep(step)) StepElement(step) else null
+    }
+
+    private fun isStep(step: YAMLMapping): Boolean {
+      return IS_STEP_PATTERN.accepts(step)
+    }
   }
 }

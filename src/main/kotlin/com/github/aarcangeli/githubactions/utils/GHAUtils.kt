@@ -1,6 +1,8 @@
 package com.github.aarcangeli.githubactions.utils
 
+import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
+import org.jetbrains.yaml.psi.YAMLScalar
 
 object GHAUtils {
   /**
@@ -22,5 +24,13 @@ object GHAUtils {
 
     // skip if the root directory is not a git repository
     return true
+  }
+
+  fun findRange(scalar: YAMLScalar, textRange: TextRange): TextRange {
+    val escaper = scalar.createLiteralTextEscaper()
+    val relevantTextRange = escaper.relevantTextRange
+    val start = escaper.getOffsetInHost(textRange.startOffset, relevantTextRange)
+    val end = escaper.getOffsetInHost(textRange.endOffset, relevantTextRange)
+    return TextRange(start, end)
   }
 }
