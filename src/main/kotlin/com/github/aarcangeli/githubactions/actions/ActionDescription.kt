@@ -26,8 +26,9 @@ class ActionDescription private constructor(
   /**
    * Returns the full name of the action, like `owner/repo`
    */
-  fun getFullName(): String? {
-    return if (owner != null && repo != null) "$owner/$repo" else null
+  fun getFullName(): String {
+    assert(isStandardAction())
+    return if (owner != null && repo != null) "$owner/$repo" else "$owner"
   }
 
   fun isDocker(): Boolean {
@@ -118,6 +119,11 @@ class ActionDescription private constructor(
       }
     }
     return null
+  }
+
+  fun replaceRef(newRef: String): ActionDescription {
+    assert(isStandardAction())
+    return ActionDescription(owner, repo, path, newRef, dockerPath, dockerTag)
   }
 
   companion object {
