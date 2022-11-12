@@ -17,16 +17,35 @@ class GHADocumentationProvider : DocumentationProvider {
     val mapping: YAMLMapping = findActionInputRoot(originalElement ?: element) ?: return null
     val yamlKeyValue = mapping.parent as? YAMLKeyValue ?: return null
 
-    val definition = DEFINITION_START + "input <b>" + yamlKeyValue.keyText + "</b>" + DEFINITION_END
+    return buildString {
+      // Append definition
+      append(DEFINITION_START + "input <b>" + yamlKeyValue.keyText + "</b>" + DEFINITION_END)
 
-    // get description
-    val description = mapping.getKeyValueByKey("description")?.valueText ?: return null
+      // Append description
+      val description = mapping.getKeyValueByKey("description")?.valueText ?: return null
+      val document: Node = Parser.builder().build().parse(description)
+      val renderer: HtmlRenderer = HtmlRenderer.builder().build()
+      append(CONTENT_START + renderer.render(document) + CONTENT_END)
 
-    val document: Node = Parser.builder().build().parse(description)
-    val renderer: HtmlRenderer = HtmlRenderer.builder().build()
-    val content = CONTENT_START + renderer.render(document) + CONTENT_END
+      append(SECTIONS_START)
 
-    return definition + content
+      // Add default value
+      mapping.getKeyValueByKey("default")?.valueText?.let {
+        append(SECTION_HEADER_START + "Default" + SECTION_SEPARATOR + "<code>$it</code>" + SECTION_END)
+      }
+
+      // Add default value
+      (mapping.getKeyValueByKey("required")?.valueText ?: "false").let {
+        append(SECTION_HEADER_START + "Required" + SECTION_SEPARATOR + it + SECTION_END)
+      }
+
+      // Add default value
+      mapping.getKeyValueByKey("deprecationMessage")?.valueText?.let {
+        append(SECTION_HEADER_START + "Deprecated" + SECTION_SEPARATOR + it + SECTION_END)
+      }
+
+      append(SECTIONS_END)
+    }
   }
 
   private fun findActionInputRoot(element: PsiElement): YAMLMapping? {

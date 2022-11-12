@@ -56,7 +56,13 @@ class GHAHighlightVisitor : YamlPsiElementVisitor(), HighlightVisitor, DumbAware
         if (reference.resolve() == null) {
           val info = HighlightInfo.newHighlightInfo(HighlightInfoType.WARNING)
             .range(keyValue.key?.textRange ?: continue)
-            .descriptionAndTooltip(GHABundle.message("highlighting.uses.action.input.not.found", keyValue.keyText, actionDescription.toString()))
+            .descriptionAndTooltip(
+              GHABundle.message(
+                "highlighting.uses.action.input.not.found",
+                keyValue.keyText,
+                actionDescription.toString()
+              )
+            )
             .create()
           holder.add(info)
         }
@@ -67,6 +73,21 @@ class GHAHighlightVisitor : YamlPsiElementVisitor(), HighlightVisitor, DumbAware
   override fun visitMapping(mapping: YAMLMapping) {
     StepElement.fromYaml(mapping)?.let { step ->
       checkUses(step.getUses() ?: return)
+
+      // check deprecated inputs
+      for (input in step.getWithInputs()) {
+        val reference = input.references.find { it is InputPropertyReference } ?: continue
+        val inputMapping = reference.resolve() as YAMLMapping? ?: continue
+
+        val deprecationMessage = inputMapping.getKeyValueByKey("deprecationMessage")?.valueText
+        if (deprecationMessage != null) {
+          val info = HighlightInfo.newHighlightInfo(HighlightInfoType.DEPRECATED)
+            .range(input.key?.textRange ?: continue)
+            .descriptionAndTooltip(GHABundle.message("highlighting.deprecated.input.used", input.keyText, deprecationMessage))
+            .create()
+          holder.add(info)
+        }
+      }
     }
   }
 

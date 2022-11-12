@@ -3,6 +3,7 @@ package com.github.aarcangeli.githubactions.providers.completion
 import com.github.aarcangeli.githubactions.actions.ActionDescription
 import com.github.aarcangeli.githubactions.actions.RemoteActionManager
 import com.github.aarcangeli.githubactions.domain.StepElement
+import com.github.aarcangeli.githubactions.utils.GHAUtils
 import com.github.aarcangeli.githubactions.utils.GHAUtils.findInputs
 import com.intellij.codeInsight.completion.CompletionContributor
 import com.intellij.codeInsight.completion.CompletionParameters
@@ -17,7 +18,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
-import org.jetbrains.yaml.psi.YAMLPsiElement
 import org.jetbrains.yaml.psi.YAMLScalar
 
 class GHACompletionContributor : CompletionContributor(), DumbAware {
@@ -25,7 +25,7 @@ class GHACompletionContributor : CompletionContributor(), DumbAware {
     val step = findStep(parameters.position) ?: return
 
     val uses = ActionDescription.fromString(step.getUses()?.textValue ?: return)
-    val currentInputs = step.getWithInputs()?.map { it.keyText } ?: emptyList()
+    val currentInputs = step.getWithInputs().map { it.keyText }
 
     val actionFile = service<RemoteActionManager>().getActionFile(uses, parameters.originalFile) ?: return
     for (input in findInputs(actionFile)) {
@@ -44,6 +44,11 @@ class GHACompletionContributor : CompletionContributor(), DumbAware {
 
       // icon
       builder = builder.withIcon(AllIcons.Vcs.Vendors.Github)
+
+      // add deprecation notice
+      inputDescription.getKeyValueByKey("deprecationMessage")?.valueText?.let {
+        builder = builder.strikeout()
+      }
 
       // insertion handler
       builder = builder.withInsertHandler(InsertHandler { context, item ->
@@ -77,7 +82,7 @@ class GHACompletionContributor : CompletionContributor(), DumbAware {
         }
 
         // add default value
-        inputDescription.getKeyValueByKey("default")?.value.let { it as? YAMLScalar }?.textValue?.let {
+        inputDescription.getKeyValueByKey("default")?.valueText?.let {
           if (!it.contains("\n")) {
             val startOffset = caretModel.offset
             val endOffset = EditorModificationUtil.insertStringAtCaret(editor, it, false, false, it.length)
@@ -103,27 +108,39 @@ class GHACompletionContributor : CompletionContributor(), DumbAware {
   private fun findStep(element: PsiElement): StepElement? {
     var current: PsiElement? = element
     while (current != null && current !is PsiFile) {
+
       if (current is YAMLKeyValue) {
-        return getContainingStep(current)
+        return GHAUtils.getStepFromInput(current)
       }
+
       if (current is YAMLScalar) {
+        val parent = current.parent
+
         // this is possible when the value is not present
         // es:
         //   - uses: actions/checkout@v2
         //     with:
         //       my-incomplete-input
-        return getContainingStep(current)
+        if (parent is YAMLKeyValue && parent.keyText == "with") {
+          val step = parent.parent as? YAMLMapping ?: return null
+          return StepElement.fromYaml(step)
+        }
+
+        // this is possible when the value is not present
+        // es:
+        //   - uses: actions/checkout@v2
+        //     with:
+        //       p1: a
+        //       my-incomplete-input
+        if (parent is YAMLMapping) {
+          val with = parent.parent as? YAMLKeyValue ?: return null
+          if (with.keyText != "with") return null
+          val step = with.parent as? YAMLMapping ?: return null
+          return StepElement.fromYaml(step)
+        }
       }
       current = current.parent
     }
     return null
-  }
-
-  private fun getContainingStep(element: YAMLPsiElement): StepElement? {
-    val withElement = element.parent as? YAMLMapping ?: return null
-    val with = withElement.parent as? YAMLKeyValue ?: return null
-    if (with.keyText != "with") return null
-    val step = with.parent as? YAMLMapping ?: return null
-    return StepElement.fromYaml(step)
   }
 }

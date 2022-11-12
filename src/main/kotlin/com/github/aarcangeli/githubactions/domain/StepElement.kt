@@ -73,11 +73,11 @@ class StepElement(private val step: YAMLMapping) {
   }
 
   /**
-   * Retrieve all "width" of the step or null if it doesn't contain a "width" key.
+   * Retrieve all "width" of the step.
    */
-  fun getWithInputs(): MutableCollection<YAMLKeyValue>? {
+  fun getWithInputs(): Collection<YAMLKeyValue> {
     val with = step.getKeyValueByKey("with")?.value as? YAMLMapping
-    return with?.keyValues
+    return with?.keyValues ?: emptyList()
   }
 
   private fun getJob(): JobElement {
