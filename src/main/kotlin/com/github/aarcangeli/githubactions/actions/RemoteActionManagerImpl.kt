@@ -1,5 +1,6 @@
 package com.github.aarcangeli.githubactions.actions
 
+import com.github.aarcangeli.githubactions.utils.GHAUtils
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
@@ -34,7 +35,7 @@ class RemoteActionManagerImpl : Disposable, RemoteActionManager {
   override fun getActionStatus(description: ActionDescription, file: PsiFile): ActionStatus {
     if (!description.isValid()) return ActionStatus.UNKNOWN
 
-    val actionFile = retrieveFileForUses(description) ?: return ActionStatus.UNKNOWN
+    val actionFile = retrieveFileForUses(description, file) ?: return ActionStatus.UNKNOWN
 
     if (actionFile is HttpVirtualFile) {
       return getStatusFromHttpActionFile(actionFile, description, file)
@@ -47,7 +48,7 @@ class RemoteActionManagerImpl : Disposable, RemoteActionManager {
   override fun getActionFile(description: ActionDescription, file: PsiFile): YAMLFile? {
     if (!description.isValid()) return null
 
-    val actionFile = retrieveFileForUses(description) ?: return null
+    val actionFile = retrieveFileForUses(description, file) ?: return null
 
     if (actionFile is HttpVirtualFile) {
       return getYamlActionFromHttpFile(actionFile, file)
@@ -56,16 +57,16 @@ class RemoteActionManagerImpl : Disposable, RemoteActionManager {
     return getYamlActionFromFile(file.project, actionFile)
   }
 
-  override fun refreshAction(uses: String) {
+  override fun refreshAction(uses: String, file: PsiFile?) {
     val description = ActionDescription.fromString(uses)
-    val virtualFile = retrieveFileForUses(description) as? HttpVirtualFile ?: return
+    val virtualFile = retrieveFileForUses(description, file) as? HttpVirtualFile ?: return
 
     LOG.info("Refresh file: ${virtualFile.url}")
     virtualFile.refresh(true, false)
     virtualFile.putUserData(LAST_TRY_VERSION, retryFailedFetches.modificationCount)
 
     if (description.ref != "HEAD") {
-      retrieveFileForUses(description.replaceRef("HEAD"))?.let {
+      retrieveFileForUses(description.replaceRef("HEAD"), file)?.let {
         LOG.info("Refresh file: ${virtualFile.url}")
         it.refresh(true, false)
         it.putUserData(LAST_TRY_VERSION, retryFailedFetches.modificationCount)
@@ -199,9 +200,18 @@ class RemoteActionManagerImpl : Disposable, RemoteActionManager {
     listener.addFile(virtualFileToWatch)
   }
 
-  private fun retrieveFileForUses(description: ActionDescription): VirtualFile? {
-    val url = getUrlFromUses(description) ?: return null
-    return VirtualFileManager.getInstance().findFileByUrl(url)
+  private fun retrieveFileForUses(description: ActionDescription, file: PsiFile?): VirtualFile? {
+    // find by url
+    getUrlFromUses(description)?.let { url ->
+      return VirtualFileManager.getInstance().findFileByUrl(url)
+    }
+    // find locally
+    if (description.isLocalPath()) {
+      GHAUtils.getGitRoot(file?.originalFile?.virtualFile ?: return null)?.let { gitRoot ->
+        return gitRoot.findFileByRelativePath(description.path!! + "/action.yml")
+      }
+    }
+    return null
   }
 
   private fun getUrlFromUses(uses: ActionDescription): String? {

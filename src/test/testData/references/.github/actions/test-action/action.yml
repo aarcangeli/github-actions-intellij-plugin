@@ -1,0 +1,15 @@
+name: Test action
+description: Test action
+inputs:
+  value:
+    description: Some string
+    required: true
+  secret:
+    description: A GitHub secret
+    required: false
+  obsolete:
+    description: An option to test the deprecationMessage property
+    deprecationMessage: This option should no longer be used!
+runs:
+  using: node12
+  main: dist/index.js

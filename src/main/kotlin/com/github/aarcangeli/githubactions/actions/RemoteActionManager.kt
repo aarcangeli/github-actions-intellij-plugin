@@ -21,8 +21,10 @@ interface RemoteActionManager {
 
   /**
    * Fetch the file for the given uses.
+   * @param uses The action name as specified in the "uses" field of workflow file.
+   * @param file the file which contains the action, the analyzer daemon is automatically restarted when the state changes.
    */
-  fun refreshAction(uses: String)
+  fun refreshAction(uses: String, file: PsiFile?)
 
   /**
    * All failed fetches will be retried on next call to [getActionStatus].

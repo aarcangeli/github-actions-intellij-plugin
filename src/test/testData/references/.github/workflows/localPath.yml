@@ -1,0 +1,9 @@
+on: { push: }
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/test-action
+        with:
+          value: test-value

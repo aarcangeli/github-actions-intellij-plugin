@@ -226,7 +226,7 @@ private class DownloadAgain(private val uses: YAMLScalar, private val text: Stri
 
   override fun invoke(project: Project, editor: Editor?, file: PsiFile?) {
     service<RemoteActionManager>().retryAllFailedActions()
-    service<RemoteActionManager>().refreshAction(uses.textValue)
+    service<RemoteActionManager>().refreshAction(uses.textValue, file)
     FileContentUtilCore.reparseFiles(file?.virtualFile ?: return)
   }
 }

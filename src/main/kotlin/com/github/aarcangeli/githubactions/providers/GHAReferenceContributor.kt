@@ -5,6 +5,7 @@ import com.github.aarcangeli.githubactions.actions.ActionStatus
 import com.github.aarcangeli.githubactions.actions.RemoteActionManager
 import com.github.aarcangeli.githubactions.domain.StepElement
 import com.github.aarcangeli.githubactions.references.InputPropertyReference
+import com.github.aarcangeli.githubactions.references.LocalActionReference
 import com.github.aarcangeli.githubactions.utils.GHAUtils
 import com.intellij.openapi.components.service
 import com.intellij.openapi.paths.WebReference
@@ -46,6 +47,10 @@ class GHAReferenceContributor : PsiReferenceContributor(), DumbAware {
       // for standard actions and docker actions, open the repository page
       description.toUrl()?.let {
         return arrayOf(WebReference(element, it))
+      }
+
+      if (description.isLocalPath()) {
+        return arrayOf(LocalActionReference(element))
       }
 
       return emptyArray()
