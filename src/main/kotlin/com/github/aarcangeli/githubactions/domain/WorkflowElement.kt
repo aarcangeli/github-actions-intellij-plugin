@@ -17,7 +17,7 @@ private val IS_WORKFLOW_PATTERN = PlatformPatterns.psiElement(YAMLMapping::class
         PlatformPatterns.psiElement(YAMLFile::class.java)
           .with(object : PatternCondition<YAMLFile>("Is Workflow File") {
             override fun accepts(t: YAMLFile, context: ProcessingContext?): Boolean {
-              return GHAUtils.isWorkflowPath(t.virtualFile ?: return false)
+              return GHAUtils.isWorkflowPath(t.originalFile.virtualFile ?: return false)
             }
           })
       )

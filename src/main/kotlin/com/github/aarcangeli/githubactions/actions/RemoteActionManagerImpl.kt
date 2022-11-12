@@ -40,7 +40,20 @@ class RemoteActionManagerImpl : Disposable, RemoteActionManager {
       return getStatusFromHttpActionFile(actionFile, description, file)
     }
 
-    return getStatusFromActionFile(file.project, actionFile)
+    getYamlActionFromFile(file.project, actionFile) ?: return ActionStatus.UNKNOWN
+    return ActionStatus.OK
+  }
+
+  override fun getActionFile(description: ActionDescription, file: PsiFile): YAMLFile? {
+    if (!description.isValid()) return null
+
+    val actionFile = retrieveFileForUses(description) ?: return null
+
+    if (actionFile is HttpVirtualFile) {
+      return getYamlActionFromHttpFile(actionFile, file)
+    }
+
+    return getYamlActionFromFile(file.project, actionFile)
   }
 
   override fun refreshAction(uses: String) {
@@ -61,34 +74,20 @@ class RemoteActionManagerImpl : Disposable, RemoteActionManager {
   }
 
   private fun getStatusFromHttpActionFile(actionFile: HttpVirtualFile, description: ActionDescription, file: PsiFile): ActionStatus {
-    val fileInfo = actionFile.fileInfo ?: return ActionStatus.UNKNOWN
-
-    // start download
-    if (fileInfo.state == RemoteFileState.DOWNLOADING_NOT_STARTED) {
-      LOG.info("Started downloading: ${actionFile.url}")
-      fileInfo.startDownloading()
-      actionFile.putUserData(LAST_TRY_VERSION, retryFailedFetches.modificationCount)
-    }
-
-    // retry if version changed
-    if (fileInfo.state == RemoteFileState.ERROR_OCCURRED) {
-      actionFile.getUserData(LAST_TRY_VERSION)?.let {
-        if (it != retryFailedFetches.modificationCount) {
-          LOG.info("Restarting download: ${actionFile.url}")
-          fileInfo.restartDownloading()
-          actionFile.putUserData(LAST_TRY_VERSION, retryFailedFetches.modificationCount)
-        }
-      }
-    }
+    tryToFetch(actionFile)
 
     // wait for download to finish
     waitDownloadOrInstallListener(actionFile, file)
 
+    val fileInfo = actionFile.fileInfo ?: return ActionStatus.UNKNOWN
     return when (fileInfo.state) {
       RemoteFileState.DOWNLOADING_IN_PROGRESS -> ActionStatus.IN_PROGRESS
 
       // the resource has been downloaded, verify if it
-      RemoteFileState.DOWNLOADED -> getStatusFromActionFile(file.project, actionFile)
+      RemoteFileState.DOWNLOADED -> {
+        getYamlActionFromFile(file.project, actionFile) ?: return ActionStatus.UNKNOWN
+        return ActionStatus.OK
+      }
 
       // the action revision is not found, but the action may still be available
       RemoteFileState.ERROR_OCCURRED -> {
@@ -109,6 +108,42 @@ class RemoteActionManagerImpl : Disposable, RemoteActionManager {
       }
 
       else -> return ActionStatus.UNKNOWN
+    }
+  }
+
+  private fun getYamlActionFromHttpFile(actionFile: HttpVirtualFile, file: PsiFile): YAMLFile? {
+    tryToFetch(actionFile)
+
+    // wait for download to finish
+    waitDownloadOrInstallListener(actionFile, file)
+
+    val fileInfo = actionFile.fileInfo ?: return null
+    if (fileInfo.state == RemoteFileState.DOWNLOADED) {
+      return getYamlActionFromFile(file.project, actionFile)
+    }
+
+    return null
+  }
+
+  private fun tryToFetch(actionFile: HttpVirtualFile) {
+    val fileInfo = actionFile.fileInfo ?: return
+
+    // start download
+    if (fileInfo.state == RemoteFileState.DOWNLOADING_NOT_STARTED) {
+      LOG.info("Started downloading: ${actionFile.url}")
+      fileInfo.startDownloading()
+      actionFile.putUserData(LAST_TRY_VERSION, retryFailedFetches.modificationCount)
+    }
+
+    // retry if version changed
+    if (fileInfo.state == RemoteFileState.ERROR_OCCURRED) {
+      actionFile.getUserData(LAST_TRY_VERSION)?.let {
+        if (it != retryFailedFetches.modificationCount) {
+          LOG.info("Restarting download: ${actionFile.url}")
+          fileInfo.restartDownloading()
+          actionFile.putUserData(LAST_TRY_VERSION, retryFailedFetches.modificationCount)
+        }
+      }
     }
   }
 
@@ -145,11 +180,8 @@ class RemoteActionManagerImpl : Disposable, RemoteActionManager {
     retryFailedFetches.incModificationCount()
   }
 
-  private fun getStatusFromActionFile(project: Project, actionFile: VirtualFile): ActionStatus {
-    // only a type check
-    val file = project.service<PsiManager>().findFile(actionFile) ?: return ActionStatus.UNKNOWN
-    if (file !is YAMLFile) return ActionStatus.UNKNOWN
-    return ActionStatus.OK
+  private fun getYamlActionFromFile(project: Project, actionFile: VirtualFile): YAMLFile? {
+    return project.service<PsiManager>().findFile(actionFile) as? YAMLFile
   }
 
   @Synchronized

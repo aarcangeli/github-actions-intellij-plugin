@@ -72,6 +72,14 @@ class StepElement(private val step: YAMLMapping) {
     return "Step: " + (getName() ?: getRun()?.textValue ?: "Unnamed")
   }
 
+  /**
+   * Retrieve all "width" of the step or null if it doesn't contain a "width" key.
+   */
+  fun getWithInputs(): MutableCollection<YAMLKeyValue>? {
+    val with = step.getKeyValueByKey("with")?.value as? YAMLMapping
+    return with?.keyValues
+  }
+
   private fun getJob(): JobElement {
     return step.parent?.parent?.parent?.parent?.let { JobElement(it as YAMLMapping) } ?: error("Step is not inside a job")
   }

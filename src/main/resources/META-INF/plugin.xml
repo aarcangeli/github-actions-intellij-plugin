@@ -23,6 +23,9 @@
                      key="deprecated.commands.display.name"
                      groupKey="github.actions.issues" enabledByDefault="true" level="WARNING"
                      implementationClass="com.github.aarcangeli.githubactions.providers.inspections.DeprecatedCommandsInspection"/>
+
+    <completion.contributor language="yaml"
+                            implementationClass="com.github.aarcangeli.githubactions.providers.completion.GHACompletionContributor"/>
   </extensions>
 
   <extensions defaultExtensionNs="JavaScript.JsonSchema">

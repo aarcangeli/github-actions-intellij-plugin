@@ -1,6 +1,7 @@
 package com.github.aarcangeli.githubactions.actions
 
 import com.intellij.psi.PsiFile
+import org.jetbrains.yaml.psi.YAMLFile
 
 interface RemoteActionManager {
   /**
@@ -9,6 +10,14 @@ interface RemoteActionManager {
    * @param file the file which contains the action, the analyzer daemon is automatically restarted when the state changes.
    */
   fun getActionStatus(description: ActionDescription, file: PsiFile): ActionStatus
+
+  /**
+   * Retrieve the action file for the given uses.
+   * @param description The action name as specified in the "uses" field of workflow file.
+   * @param file the file which contains the action, the analyzer daemon is automatically restarted when the state changes.
+   * @return the action file or null if the action is not found, or it is currently being downloaded.
+   */
+  fun getActionFile(description: ActionDescription, file: PsiFile): YAMLFile?
 
   /**
    * Fetch the file for the given uses.

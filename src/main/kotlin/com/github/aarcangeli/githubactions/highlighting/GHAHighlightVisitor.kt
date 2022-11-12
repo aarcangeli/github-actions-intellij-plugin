@@ -53,11 +53,19 @@ class GHAHighlightVisitor : YamlPsiElementVisitor(), HighlightVisitor, DumbAware
     }
   }
 
+  /**
+   * Validates the content of the `uses` field.
+   *
+   * Eg:
+   * ```yaml
+   *   uses: "<owner>/<repo>@<ref>"
+   * ```
+   */
   private fun checkUses(uses: YAMLScalar) {
     val containingFile = uses.containingFile ?: return
     val content = uses.textValue
 
-    // schema already checks for empty string
+    // Ignore validations for empty string (schema validation will catch it)
     if (content.isEmpty()) return
 
     // GitHub doesn't support untrimmed the values
