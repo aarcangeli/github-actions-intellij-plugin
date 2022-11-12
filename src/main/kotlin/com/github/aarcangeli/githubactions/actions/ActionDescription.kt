@@ -1,6 +1,7 @@
 package com.github.aarcangeli.githubactions.actions
 
 import com.intellij.util.text.nullize
+import java.net.URL
 
 private val ALPHANUMERIC_PATTERN = Regex("[a-zA-Z0-9\\-._]+")
 private val TAG_PATTERN = Regex("[a-zA-Z0-9\\-./_]+")
@@ -149,6 +150,21 @@ class ActionDescription private constructor(
       val path = fullName.drop(2).joinToString("/").nullize()
       val ref = parts.getOrNull(1).nullize()
       return ActionDescription(owner, repo, path, ref, null, null)
+    }
+
+    fun fromUrl(url: String): ActionDescription? {
+      val parsed = URL(url)
+      if (parsed.host == "raw.githubusercontent.com") {
+        val parts = parsed.path.split("/")
+        if (parts.size >= 3 && parts[0] == "" && parts.last() == "action.yml") {
+          val owner = parts[1]
+          val repo = parts[2]
+          val ref = parts[3]
+          val path = parts.drop(4).dropLast(1).joinToString("/").nullize()
+          return ActionDescription(owner, repo, path, ref, null, null)
+        }
+      }
+      return null
     }
   }
 }

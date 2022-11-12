@@ -31,6 +31,9 @@
     <lang.documentationProvider language="yaml"
                                 implementationClass="com.github.aarcangeli.githubactions.providers.documentation.GHADocumentationProvider"
                                 order="before YamlJsonSchemaDocumentationProvider"/>
+
+    <http.fileEditorActionProvider implementation="com.github.aarcangeli.githubactions.providers.GHAEditorActionProvider"/>
+
   </extensions>
 
   <extensions defaultExtensionNs="JavaScript.JsonSchema">
