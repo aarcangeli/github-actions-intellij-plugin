@@ -1,7 +1,11 @@
 package com.github.aarcangeli.githubactions.utils
 
+import com.github.aarcangeli.githubactions.domain.StepElement
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
+import org.jetbrains.yaml.psi.YAMLFile
+import org.jetbrains.yaml.psi.YAMLKeyValue
+import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLScalar
 
 object GHAUtils {
@@ -32,5 +36,27 @@ object GHAUtils {
     val start = escaper.getOffsetInHost(textRange.startOffset, relevantTextRange)
     val end = escaper.getOffsetInHost(textRange.endOffset, relevantTextRange)
     return TextRange(start, end)
+  }
+
+  fun findInputs(actionFile: YAMLFile): Map<String, YAMLMapping> {
+    val result = mutableMapOf<String, YAMLMapping>()
+    for (document in actionFile.documents) {
+      val root = document.topLevelValue as? YAMLMapping ?: continue
+      val jobs = root.getKeyValueByKey("inputs")?.value as? YAMLMapping ?: continue
+      for (job in jobs.keyValues) {
+        if (job.keyText.isNotEmpty()) {
+          result[job.keyText] = job.value as? YAMLMapping ?: continue
+        }
+      }
+    }
+    return result
+  }
+
+  fun getStepFromInput(element: YAMLKeyValue): StepElement? {
+    val withElement = element.parent as? YAMLMapping ?: return null
+    val with = withElement.parent as? YAMLKeyValue ?: return null
+    if (with.keyText != "with") return null
+    val step = with.parent as? YAMLMapping ?: return null
+    return StepElement.fromYaml(step)
   }
 }

@@ -5,6 +5,7 @@ import com.github.aarcangeli.githubactions.actions.ActionDescription
 import com.github.aarcangeli.githubactions.actions.ActionStatus
 import com.github.aarcangeli.githubactions.actions.RemoteActionManager
 import com.github.aarcangeli.githubactions.domain.StepElement
+import com.github.aarcangeli.githubactions.references.InputPropertyReference
 import com.github.aarcangeli.githubactions.utils.GHAUtils
 import com.github.aarcangeli.githubactions.utils.GHAUtils.isWorkflowPath
 import com.github.aarcangeli.githubactions.utils.ReplaceWithTrimmed
@@ -22,6 +23,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.util.FileContentUtilCore
+import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLScalar
 import org.jetbrains.yaml.psi.YamlPsiElementVisitor
@@ -45,6 +47,21 @@ class GHAHighlightVisitor : YamlPsiElementVisitor(), HighlightVisitor, DumbAware
 
   override fun visit(element: PsiElement) {
     element.accept(this)
+  }
+
+  override fun visitKeyValue(keyValue: YAMLKeyValue) {
+    for (reference in keyValue.references) {
+      if (reference is InputPropertyReference && !reference.isSoft) {
+        val actionDescription = reference.findActionDescription() ?: continue
+        if (reference.resolve() == null) {
+          val info = HighlightInfo.newHighlightInfo(HighlightInfoType.WARNING)
+            .range(keyValue.key?.textRange ?: continue)
+            .descriptionAndTooltip(GHABundle.message("highlighting.uses.action.input.not.found", keyValue.keyText, actionDescription.toString()))
+            .create()
+          holder.add(info)
+        }
+      }
+    }
   }
 
   override fun visitMapping(mapping: YAMLMapping) {

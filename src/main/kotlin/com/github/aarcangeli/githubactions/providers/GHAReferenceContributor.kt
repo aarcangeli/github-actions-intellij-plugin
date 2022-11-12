@@ -4,6 +4,8 @@ import com.github.aarcangeli.githubactions.actions.ActionDescription
 import com.github.aarcangeli.githubactions.actions.ActionStatus
 import com.github.aarcangeli.githubactions.actions.RemoteActionManager
 import com.github.aarcangeli.githubactions.domain.StepElement
+import com.github.aarcangeli.githubactions.references.InputPropertyReference
+import com.github.aarcangeli.githubactions.utils.GHAUtils
 import com.intellij.openapi.components.service
 import com.intellij.openapi.paths.WebReference
 import com.intellij.openapi.project.DumbAware
@@ -20,6 +22,10 @@ class GHAReferenceContributor : PsiReferenceContributor(), DumbAware {
     registrar.registerReferenceProvider(
       PlatformPatterns.psiElement(YAMLScalar::class.java).withLanguage(YAMLLanguage.INSTANCE),
       GHAReferenceProvider()
+    )
+    registrar.registerReferenceProvider(
+      PlatformPatterns.psiElement(YAMLKeyValue::class.java).withLanguage(YAMLLanguage.INSTANCE),
+      InputReferenceProvider()
     )
   }
 
@@ -50,6 +56,14 @@ class GHAReferenceContributor : PsiReferenceContributor(), DumbAware {
       if (uses.keyText != "uses") return null
       val step = uses.parent as? YAMLMapping ?: return null
       return StepElement.fromYaml(step)
+    }
+  }
+
+  private class InputReferenceProvider : PsiReferenceProvider() {
+    override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
+      // verify it is a valid with attribute
+      GHAUtils.getStepFromInput(element as YAMLKeyValue) ?: return PsiReference.EMPTY_ARRAY
+      return arrayOf(InputPropertyReference(element))
     }
   }
 }

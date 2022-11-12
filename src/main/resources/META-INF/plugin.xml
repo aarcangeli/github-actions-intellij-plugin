@@ -25,7 +25,12 @@
                      implementationClass="com.github.aarcangeli.githubactions.providers.inspections.DeprecatedCommandsInspection"/>
 
     <completion.contributor language="yaml"
-                            implementationClass="com.github.aarcangeli.githubactions.providers.completion.GHACompletionContributor"/>
+                            implementationClass="com.github.aarcangeli.githubactions.providers.completion.GHACompletionContributor"
+                            order="first, before YamlJsonSchema"/>
+
+    <lang.documentationProvider language="yaml"
+                                implementationClass="com.github.aarcangeli.githubactions.providers.documentation.GHADocumentationProvider"
+                                order="before YamlJsonSchemaDocumentationProvider"/>
   </extensions>
 
   <extensions defaultExtensionNs="JavaScript.JsonSchema">
