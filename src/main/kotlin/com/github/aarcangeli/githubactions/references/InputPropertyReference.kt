@@ -13,11 +13,11 @@ import org.jetbrains.yaml.psi.YAMLKeyValue
 /**
  * Represents a reference to an input property.
  *
- * ES:
+ * ES "my_input" in the following example:
  * ```yaml
- * - uses: actions/checkout@v2
+ * - uses: actions/name@v2
  *   with:
- *     my-input: value
+ *     my_input: value
  * ```
  */
 class InputPropertyReference(element: YAMLKeyValue) : PsiReferenceBase<YAMLKeyValue>(element) {

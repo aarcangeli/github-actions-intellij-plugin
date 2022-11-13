@@ -2,12 +2,14 @@ package com.github.aarcangeli.githubactions.references
 
 import com.github.aarcangeli.githubactions.GHABaseTestCase
 import com.intellij.psi.search.searches.ReferencesSearch
+import com.intellij.psi.util.parentOfType
 import junit.framework.TestCase
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
 
 internal class InputPropertyReferenceTest : GHABaseTestCase() {
   private lateinit var localPath: YAMLFile
+  private lateinit var actionFile: YAMLFile
 
   override fun setUp() {
     super.setUp()
@@ -15,7 +17,7 @@ internal class InputPropertyReferenceTest : GHABaseTestCase() {
     localPath = myFixture.configureByFile("references/.github/workflows/localPath.yml") as YAMLFile
 
     // copy test files to the project folder
-    myFixture.configureByFile("references/.github/test-target/action.yml")
+    actionFile = myFixture.configureByFile("references/.github/test-target/action.yml") as YAMLFile
   }
 
   fun testReference() {
@@ -28,7 +30,7 @@ internal class InputPropertyReferenceTest : GHABaseTestCase() {
     // verify resolved element
     TestCase.assertNotNull(resolved)
     TestCase.assertTrue(resolved is YAMLKeyValue)
-    TestCase.assertEquals((resolved as YAMLKeyValue).keyText, "value")
+    TestCase.assertEquals("value", (resolved as YAMLKeyValue).keyText)
   }
 
   fun testUsages() {
@@ -37,9 +39,20 @@ internal class InputPropertyReferenceTest : GHABaseTestCase() {
     val inputDefinition = localPath.findReferenceAt(offset)!!.resolve() as YAMLKeyValue
 
     val references = ReferencesSearch.search(inputDefinition).findAll()
-    TestCase.assertEquals(references.size, 1)
+    TestCase.assertEquals(1, references.size)
     TestCase.assertTrue(references.first() is InputPropertyReference)
-    TestCase.assertEquals(references.first().element.textOffset, offset)
+    TestCase.assertEquals(offset, references.first().element.textOffset)
+    TestCase.assertFalse(references.first().isSoft)
+  }
+
+  fun testUsagesFromOffset() {
+    // setup, get referenced value
+    val inputDefinition = actionFile.findElementAt(actionFile.text.indexOf("value:"))!!.parentOfType<YAMLKeyValue>()!!
+
+    val references = ReferencesSearch.search(inputDefinition).findAll()
+    TestCase.assertEquals(1, references.size)
+    TestCase.assertTrue(references.first() is InputPropertyReference)
+    TestCase.assertEquals(references.first().element.text, "value: test-value")
     TestCase.assertFalse(references.first().isSoft)
   }
 }

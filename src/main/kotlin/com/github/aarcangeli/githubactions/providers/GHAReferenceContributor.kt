@@ -1,13 +1,8 @@
 package com.github.aarcangeli.githubactions.providers
 
-import com.github.aarcangeli.githubactions.actions.ActionDescription
-import com.github.aarcangeli.githubactions.actions.ActionStatus
-import com.github.aarcangeli.githubactions.actions.RemoteActionManager
+import com.github.aarcangeli.githubactions.references.ActionReference
 import com.github.aarcangeli.githubactions.references.InputPropertyReference
-import com.github.aarcangeli.githubactions.references.LocalActionReference
 import com.github.aarcangeli.githubactions.utils.GHAUtils
-import com.intellij.openapi.components.service
-import com.intellij.openapi.paths.WebReference
 import com.intellij.openapi.project.DumbAware
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.psi.*
@@ -32,26 +27,7 @@ class GHAReferenceContributor : PsiReferenceContributor(), DumbAware {
     override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
       // verify it is a valid step
       GHAUtils.getStepFromUses(element as YAMLScalar) ?: return PsiReference.EMPTY_ARRAY
-      val containingFile = element.containingFile ?: return PsiReference.EMPTY_ARRAY
-      val description = ActionDescription.fromString(element.textValue)
-
-      if (description.isStandardAction()) {
-        val actionStatus = service<RemoteActionManager>().getActionStatus(description, containingFile)
-        if (actionStatus != ActionStatus.OK) {
-          return PsiReference.EMPTY_ARRAY
-        }
-      }
-
-      // for standard actions and docker actions, open the repository page
-      description.toUrl()?.let {
-        return arrayOf(WebReference(element, it))
-      }
-
-      if (description.isLocalPath()) {
-        return arrayOf(LocalActionReference(element))
-      }
-
-      return emptyArray()
+      return arrayOf(ActionReference(element))
     }
   }
 

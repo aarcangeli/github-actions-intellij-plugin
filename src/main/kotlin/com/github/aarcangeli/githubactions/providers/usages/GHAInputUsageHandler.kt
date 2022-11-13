@@ -2,6 +2,7 @@ package com.github.aarcangeli.githubactions.providers.usages
 
 import com.github.aarcangeli.githubactions.utils.GHAUtils
 import com.intellij.openapi.application.QueryExecutorBase
+import com.intellij.openapi.vfs.impl.http.HttpVirtualFile
 import com.intellij.psi.PsiReference
 import com.intellij.psi.search.searches.ReferencesSearch
 import com.intellij.util.Processor
@@ -22,7 +23,7 @@ class GHAInputUsageHandler : QueryExecutorBase<PsiReference, ReferencesSearch.Se
     }
 
     val virtualFile = file.virtualFile ?: return
-    val directoryName = virtualFile.parent?.name ?: return
+    val directoryName = (if (virtualFile is HttpVirtualFile) virtualFile.parent?.parent?.name else virtualFile.parent?.name) ?: return
     queryParameters.optimizer.searchWord(directoryName, queryParameters.effectiveSearchScope, true, file)
   }
 }

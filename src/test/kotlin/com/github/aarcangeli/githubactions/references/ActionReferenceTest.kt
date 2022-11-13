@@ -6,7 +6,7 @@ import junit.framework.TestCase
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLScalar
 
-internal class LocalActionReferenceTest : GHABaseTestCase() {
+internal class ActionReferenceTest : GHABaseTestCase() {
 
   private lateinit var localPath: YAMLFile
   private lateinit var actionFile: YAMLFile
@@ -23,7 +23,7 @@ internal class LocalActionReferenceTest : GHABaseTestCase() {
   fun testLocalPath() {
     // verify local reference
     val reference = localPath.findReferenceAt(localPath.text.indexOf("./.github/test-target"))!!
-    TestCase.assertNotNull(reference is LocalActionReference)
+    TestCase.assertNotNull(reference is ActionReference)
     val resolved = reference.resolve()
     TestCase.assertNotNull(resolved)
     TestCase.assertEquals(resolved, actionFile)
@@ -32,10 +32,10 @@ internal class LocalActionReferenceTest : GHABaseTestCase() {
   fun testUsages() {
     // setup, get referenced value
     val references = ReferencesSearch.search(actionFile).findAll()
-    TestCase.assertEquals(references.size, 1)
-    TestCase.assertTrue(references.first() is LocalActionReference)
+    TestCase.assertEquals(1, references.size)
+    TestCase.assertTrue(references.first() is ActionReference)
     TestCase.assertTrue(references.first().element is YAMLScalar)
-    TestCase.assertEquals(references.first().element.containingFile, localPath)
-    TestCase.assertEquals(references.first().element.text, "./.github/test-target")
+    TestCase.assertEquals(localPath, references.first().element.containingFile)
+    TestCase.assertEquals("./.github/test-target", references.first().element.text)
   }
 }
