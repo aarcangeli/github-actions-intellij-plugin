@@ -3,7 +3,6 @@ package com.github.aarcangeli.githubactions.providers
 import com.github.aarcangeli.githubactions.actions.ActionDescription
 import com.github.aarcangeli.githubactions.actions.ActionStatus
 import com.github.aarcangeli.githubactions.actions.RemoteActionManager
-import com.github.aarcangeli.githubactions.domain.StepElement
 import com.github.aarcangeli.githubactions.references.InputPropertyReference
 import com.github.aarcangeli.githubactions.references.LocalActionReference
 import com.github.aarcangeli.githubactions.utils.GHAUtils
@@ -15,7 +14,6 @@ import com.intellij.psi.*
 import com.intellij.util.ProcessingContext
 import org.jetbrains.yaml.YAMLLanguage
 import org.jetbrains.yaml.psi.YAMLKeyValue
-import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLScalar
 
 class GHAReferenceContributor : PsiReferenceContributor(), DumbAware {
@@ -33,7 +31,7 @@ class GHAReferenceContributor : PsiReferenceContributor(), DumbAware {
   private class GHAReferenceProvider : PsiReferenceProvider() {
     override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
       // verify it is a valid step
-      getContainingStep(element as YAMLScalar) ?: return PsiReference.EMPTY_ARRAY
+      GHAUtils.getStepFromUses(element as YAMLScalar) ?: return PsiReference.EMPTY_ARRAY
       val containingFile = element.containingFile ?: return PsiReference.EMPTY_ARRAY
       val description = ActionDescription.fromString(element.textValue)
 
@@ -54,13 +52,6 @@ class GHAReferenceContributor : PsiReferenceContributor(), DumbAware {
       }
 
       return emptyArray()
-    }
-
-    private fun getContainingStep(element: YAMLScalar): StepElement? {
-      val uses = element.parent as? YAMLKeyValue ?: return null
-      if (uses.keyText != "uses") return null
-      val step = uses.parent as? YAMLMapping ?: return null
-      return StepElement.fromYaml(step)
     }
   }
 

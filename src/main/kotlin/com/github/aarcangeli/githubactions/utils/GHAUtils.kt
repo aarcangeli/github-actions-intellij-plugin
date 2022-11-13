@@ -3,6 +3,9 @@ package com.github.aarcangeli.githubactions.utils
 import com.github.aarcangeli.githubactions.domain.StepElement
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
+import org.commonmark.node.Node
+import org.commonmark.parser.Parser
+import org.commonmark.renderer.html.HtmlRenderer
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
@@ -61,5 +64,18 @@ object GHAUtils {
     if (with.keyText != "with") return null
     val step = with.parent as? YAMLMapping ?: return null
     return StepElement.fromYaml(step)
+  }
+
+  fun getStepFromUses(element: YAMLScalar): StepElement? {
+    val uses = element.parent as? YAMLKeyValue ?: return null
+    if (uses.keyText != "uses") return null
+    val step = uses.parent as? YAMLMapping ?: return null
+    return StepElement.fromYaml(step)
+  }
+
+  fun renderMarkdown(description: String): String {
+    val document: Node = Parser.builder().build().parse(description)
+    val renderer: HtmlRenderer = HtmlRenderer.builder().build()
+    return renderer.render(document)
   }
 }

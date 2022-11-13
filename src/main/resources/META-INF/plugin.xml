@@ -29,7 +29,11 @@
                             order="first, before YamlJsonSchema"/>
 
     <lang.documentationProvider language="yaml"
-                                implementationClass="com.github.aarcangeli.githubactions.providers.documentation.GHADocumentationProvider"
+                                implementationClass="com.github.aarcangeli.githubactions.providers.documentation.GHAInputDocumentationProvider"
+                                order="before YamlJsonSchemaDocumentationProvider"/>
+
+    <lang.documentationProvider language="yaml"
+                                implementationClass="com.github.aarcangeli.githubactions.providers.documentation.GHAUsesDocumentationProvider"
                                 order="before YamlJsonSchemaDocumentationProvider"/>
 
     <http.fileEditorActionProvider implementation="com.github.aarcangeli.githubactions.providers.GHAEditorActionProvider"/>

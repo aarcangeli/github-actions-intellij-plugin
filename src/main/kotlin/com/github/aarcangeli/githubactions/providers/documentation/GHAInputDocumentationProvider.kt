@@ -1,18 +1,20 @@
 package com.github.aarcangeli.githubactions.providers.documentation
 
 import com.github.aarcangeli.githubactions.references.InputPropertyReference
+import com.github.aarcangeli.githubactions.utils.GHAUtils
 import com.intellij.lang.documentation.DocumentationMarkup.*
 import com.intellij.lang.documentation.DocumentationProvider
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.parentOfType
-import org.commonmark.node.Node
-import org.commonmark.parser.Parser
-import org.commonmark.renderer.html.HtmlRenderer
+import com.intellij.psi.util.parents
 import org.jetbrains.annotations.Nls
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
 
-class GHADocumentationProvider : DocumentationProvider {
+/**
+ * Provides documentation for input parameters
+ */
+class GHAInputDocumentationProvider : DocumentationProvider {
   override fun generateDoc(element: PsiElement, originalElement: PsiElement?): @Nls String? {
     val mapping: YAMLMapping = findActionInputRoot(originalElement ?: element) ?: return null
     val yamlKeyValue = mapping.parent as? YAMLKeyValue ?: return null
@@ -23,9 +25,7 @@ class GHADocumentationProvider : DocumentationProvider {
 
       // Append description
       val description = mapping.getKeyValueByKey("description")?.valueText ?: return null
-      val document: Node = Parser.builder().build().parse(description)
-      val renderer: HtmlRenderer = HtmlRenderer.builder().build()
-      append(CONTENT_START + renderer.render(document) + CONTENT_END)
+      append(CONTENT_START + GHAUtils.renderMarkdown(description) + CONTENT_END)
 
       append(SECTIONS_START)
 
@@ -57,6 +57,12 @@ class GHADocumentationProvider : DocumentationProvider {
     }
 
     val keyValue = element.parentOfType<YAMLKeyValue>() ?: return null
+
+    // element must be the key of the input
+    if (!element.parents(true).contains(keyValue.key)) {
+      return null
+    }
+
     val reference = keyValue.references.find { it is InputPropertyReference } ?: return null
     return reference.resolve() as? YAMLMapping
   }
