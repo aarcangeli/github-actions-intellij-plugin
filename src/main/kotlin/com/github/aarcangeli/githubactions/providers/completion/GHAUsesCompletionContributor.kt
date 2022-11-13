@@ -20,7 +20,7 @@ import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLScalar
 
-class GHACompletionContributor : CompletionContributor(), DumbAware {
+class GHAUsesCompletionContributor : CompletionContributor(), DumbAware {
   override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
     val step = findStep(parameters.position) ?: return
 

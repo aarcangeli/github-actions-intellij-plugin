@@ -24,9 +24,15 @@
                      groupKey="github.actions.issues" enabledByDefault="true" level="WARNING"
                      implementationClass="com.github.aarcangeli.githubactions.providers.inspections.DeprecatedCommandsInspection"/>
 
+    <!-- Completion contributors -->
     <completion.contributor language="yaml"
-                            implementationClass="com.github.aarcangeli.githubactions.providers.completion.GHACompletionContributor"
+                            id="aarcangeli.github-actions.completion.GHAUsesCompletionContributor"
+                            implementationClass="com.github.aarcangeli.githubactions.providers.completion.GHAUsesCompletionContributor"
                             order="first, before YamlJsonSchema"/>
+    <completion.contributor language="yaml"
+                            id="aarcangeli.github-actions.completion.GHALocalActionCompletion"
+                            implementationClass="com.github.aarcangeli.githubactions.providers.completion.GHALocalActionCompletion"/>
+    <typedHandler implementation="com.github.aarcangeli.githubactions.providers.completion.LocalActionAutoPopup"/>
 
     <lang.documentationProvider language="yaml"
                                 implementationClass="com.github.aarcangeli.githubactions.providers.documentation.GHAInputDocumentationProvider"

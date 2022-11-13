@@ -209,6 +209,7 @@ class RemoteActionManagerImpl : Disposable, RemoteActionManager {
     if (description.isLocalPath()) {
       GHAUtils.getGitRoot(file?.originalFile?.virtualFile ?: return null)?.let { gitRoot ->
         return gitRoot.findFileByRelativePath(description.path!! + "/action.yml")
+          ?: gitRoot.findFileByRelativePath(description.path + "/action.yaml")
       }
     }
     return null
