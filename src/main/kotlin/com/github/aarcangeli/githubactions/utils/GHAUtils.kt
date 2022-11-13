@@ -11,6 +11,8 @@ import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLScalar
 
+private val ACTION_YAML_FILES = listOf("action.yml", "action.yaml")
+
 object GHAUtils {
   fun isWorkflowPath(file: VirtualFile): Boolean {
     return getGitRoot(file) != null
@@ -44,14 +46,14 @@ object GHAUtils {
     return TextRange(start, end)
   }
 
-  fun findInputs(actionFile: YAMLFile): Map<String, YAMLMapping> {
-    val result = mutableMapOf<String, YAMLMapping>()
+  fun findInputs(actionFile: YAMLFile): Map<String, YAMLKeyValue> {
+    val result = mutableMapOf<String, YAMLKeyValue>()
     for (document in actionFile.documents) {
       val root = document.topLevelValue as? YAMLMapping ?: continue
       val jobs = root.getKeyValueByKey("inputs")?.value as? YAMLMapping ?: continue
       for (job in jobs.keyValues) {
         if (job.keyText.isNotEmpty()) {
-          result[job.keyText] = job.value as? YAMLMapping ?: continue
+          result[job.keyText] = job
         }
       }
     }
@@ -77,5 +79,15 @@ object GHAUtils {
     val document: Node = Parser.builder().build().parse(description)
     val renderer: HtmlRenderer = HtmlRenderer.builder().build()
     return renderer.render(document)
+  }
+
+  fun isInputDefinition(inputDefinition: YAMLKeyValue): Boolean {
+    val file = inputDefinition.containingFile?.originalFile ?: return false
+    if (file !is YAMLFile || !isActionFile(file)) return false
+    return findInputs(file).values.contains(inputDefinition)
+  }
+
+  fun isActionFile(file: YAMLFile): Boolean {
+    return file.name in ACTION_YAML_FILES
   }
 }

@@ -32,7 +32,7 @@ class GHACompletionContributor : CompletionContributor(), DumbAware {
       // don't suggest already defined inputs
       if (input.key in currentInputs) continue
 
-      val inputDescription: YAMLMapping = input.value
+      val inputDescription = input.value.value as? YAMLMapping ?: continue
       var builder = LookupElementBuilder.create(input.key)
 
       builder = builder.withPsiElement(inputDescription)
@@ -51,7 +51,7 @@ class GHACompletionContributor : CompletionContributor(), DumbAware {
       }
 
       // insertion handler
-      builder = builder.withInsertHandler(InsertHandler { context, item ->
+      builder = builder.withInsertHandler(InsertHandler { context, _ ->
         val editor = context.editor
         val docChars = context.document.charsSequence
         val caretModel = editor.caretModel

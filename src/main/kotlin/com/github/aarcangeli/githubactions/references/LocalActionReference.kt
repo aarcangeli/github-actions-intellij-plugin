@@ -11,11 +11,11 @@ import org.jetbrains.yaml.psi.YAMLScalar
 /**
  * Represents a reference to an action file.
  *
- * ES:
+ * ES "my_input" in the following example:
  * ```yaml
  * - uses: ./.github/actions/my-local-action
  *   with:
- *     my-input: value
+ *     my_input: value
  * ```
  */
 class LocalActionReference(element: YAMLScalar) : PsiReferenceBase<YAMLScalar>(element, true) {

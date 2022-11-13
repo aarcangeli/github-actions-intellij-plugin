@@ -77,7 +77,8 @@ class GHAHighlightVisitor : YamlPsiElementVisitor(), HighlightVisitor, DumbAware
       // check deprecated inputs
       for (input in step.getWithInputs()) {
         val reference = input.references.find { it is InputPropertyReference } ?: continue
-        val inputMapping = reference.resolve() as YAMLMapping? ?: continue
+        val target = reference.resolve() as? YAMLKeyValue ?: continue
+        val inputMapping = target.value as? YAMLMapping ?: continue
 
         val deprecationMessage = inputMapping.getKeyValueByKey("deprecationMessage")?.valueText
         if (deprecationMessage != null) {

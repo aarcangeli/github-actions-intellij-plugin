@@ -4,6 +4,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/actions/test-action
+      # We cannot name it "./.github/test-action" as intellij automatically finds usages in this case
+      - uses: ./.github/test-target
         with:
           value: test-value

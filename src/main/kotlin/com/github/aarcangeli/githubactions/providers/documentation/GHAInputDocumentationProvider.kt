@@ -16,8 +16,8 @@ import org.jetbrains.yaml.psi.YAMLMapping
  */
 class GHAInputDocumentationProvider : DocumentationProvider {
   override fun generateDoc(element: PsiElement, originalElement: PsiElement?): @Nls String? {
-    val mapping: YAMLMapping = findActionInputRoot(originalElement ?: element) ?: return null
-    val yamlKeyValue = mapping.parent as? YAMLKeyValue ?: return null
+    val yamlKeyValue: YAMLKeyValue = findActionInputRoot(originalElement ?: element) ?: return null
+    val mapping = yamlKeyValue.value as? YAMLMapping ?: return null
 
     return buildString {
       // Append definition
@@ -48,10 +48,10 @@ class GHAInputDocumentationProvider : DocumentationProvider {
     }
   }
 
-  private fun findActionInputRoot(element: PsiElement): YAMLMapping? {
+  private fun findActionInputRoot(element: PsiElement): YAMLKeyValue? {
     // element already be the input we want
-    if (element is YAMLMapping) {
-      if (element.getKeyValueByKey("description") != null) {
+    if (element is YAMLKeyValue) {
+      if (GHAUtils.isInputDefinition(element)) {
         return element
       }
     }
@@ -64,6 +64,6 @@ class GHAInputDocumentationProvider : DocumentationProvider {
     }
 
     val reference = keyValue.references.find { it is InputPropertyReference } ?: return null
-    return reference.resolve() as? YAMLMapping
+    return reference.resolve() as? YAMLKeyValue
   }
 }

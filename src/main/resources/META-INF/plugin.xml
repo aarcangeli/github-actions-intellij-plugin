@@ -38,6 +38,10 @@
 
     <http.fileEditorActionProvider implementation="com.github.aarcangeli.githubactions.providers.GHAEditorActionProvider"/>
 
+    <!-- Find usages -->
+    <useScopeEnlarger implementation="com.github.aarcangeli.githubactions.providers.GHAUseScopeEnlarger"/>
+    <referencesSearch implementation="com.github.aarcangeli.githubactions.providers.usages.GHAInputUsageHandler"/>
+
   </extensions>
 
   <extensions defaultExtensionNs="JavaScript.JsonSchema">
