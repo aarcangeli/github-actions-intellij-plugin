@@ -53,7 +53,7 @@ class DeprecatedCommandsInspection : LocalInspectionTool() {
     // Get run field if available
     val run = step.getRun() ?: return emptyList()
     val literalTextEscaper = run.createLiteralTextEscaper()
-    val relevantTextRange = literalTextEscaper.relevantTextRange
+    val relevantTextRange = literalTextEscaper.relevantTextRange ?: return emptyList()
 
     val shellType = step.guessShell() ?: ShellType.Bash
 
