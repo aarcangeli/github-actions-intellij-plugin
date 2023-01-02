@@ -2,8 +2,7 @@ package com.github.aarcangeli.githubactions.errorhandler
 
 import com.github.aarcangeli.githubactions.GHABundle
 import com.intellij.ide.BrowserUtil
-import com.intellij.ide.plugins.IdeaPluginDescriptor
-import com.intellij.ide.plugins.PluginManagerCore
+import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.diagnostic.ErrorReportSubmitter
 import com.intellij.openapi.diagnostic.IdeaLoggingEvent
@@ -66,8 +65,7 @@ class GithubErrorHandler : ErrorReportSubmitter() {
     }
 
     private fun getPluginVersion(): String {
-      val pluginId = PluginManagerCore.getPluginByClassName(GithubErrorHandler::class.java.name)
-      val plugin: IdeaPluginDescriptor? = PluginManagerCore.getPlugin(pluginId)
+      val plugin = PluginManager.getPluginByClass(GithubErrorHandler::class.java)
       return plugin?.version ?: "unknown"
     }
 
