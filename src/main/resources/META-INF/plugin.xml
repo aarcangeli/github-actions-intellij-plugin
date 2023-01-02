@@ -10,6 +10,8 @@
   <resource-bundle>messages.GHABundle</resource-bundle>
 
   <extensions defaultExtensionNs="com.intellij">
+    <errorHandler implementation="com.github.aarcangeli.githubactions.errorhandler.GithubErrorHandler"/>
+
     <applicationService serviceInterface="com.github.aarcangeli.githubactions.actions.RemoteActionManager"
                         serviceImplementation="com.github.aarcangeli.githubactions.actions.RemoteActionManagerImpl"/>
 
